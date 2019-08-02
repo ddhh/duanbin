@@ -3,61 +3,74 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 
 
-class MyTable(QWidget):
-    def __init__(self):
+class MyTable(QTableView):
+    def __init__(self, itemModel):
         super(MyTable, self).__init__()
-        self._cost_type = ['产量', '员工工资', 'a', 'b', 'c']
-        self.initUI()
+        self.itemModel = itemModel
+        self.setModel(itemModel)
+        self.frozenTableView = QTableView()
 
-    def initUI(self):
-        self.resize(900, 600)
-        conLayout = QVBoxLayout()
+        self.__initUI()
 
-        tableWidget = QTableWidget()
-        tableWidget.setRowCount(93)
-        tableWidget.setColumnCount(26)
-        tableWidget.setHorizontalHeaderLabels([chr(i) for i in range(65, 65+26)])
+        self.connect(self.horizontalHeader(), QHeaderView.sectionResized(), self.updateSectionWidth())
 
-        for i in range(12):
-            tableWidget.setSpan(0, 2*i+1, 1, 2)
-            tableWidget.setSpan(2, 2*i+1, 1, 2)
-            tableWidget.setItem(0, 2*i+1, self.setItem('%d月实际' % (i+1)))
+        self.connect(self.horizontalHeader(), QHeaderView.sectionResized(), self.updateSectionHeight())
 
-            tableWidget.setItem(1, 2*i+1, self.setItem('金额'))
-            tableWidget.setItem(1, 2*i+2, self.setItem('吨耗'))
+        self.connect(self.frozenTableView.verticalScrollBar(), QAbstractSlider.valueChanged(), self.verticalScrollBar(), QAbstractSlider.setValue())
 
-        for i in range(len(self._cost_type)):
-            tableWidget.setItem(2+i, 0, self.setItem(self._cost_type[i]))
+        self.connect(self.verticalScrollBar(), QAbstractSlider.valueChanged(), self.frozenTableView.verticalScrollBar(), QAbstractSlider.setValue())
 
-        # twheader = QTableWidget()
-        # twheader.setRowCount(2)
-        # twheader.setColumnCount(26)
-        # twheader.horizontalHeader().setVisible(False)
-        # twheader.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        # twheader.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        # twheader.setFocusPolicy(Qt.NoFocus)
-        #
-        # conLayout.addWidget(twheader)
-        conLayout.addWidget(tableWidget)
+    def __initUI(self):
+        self.frozenTableView.setModel(self.model())
+        self.frozenTableView.setFocusProxy(Qt.NoFocus)
+        self.frozenTableView.verticalHeader().hide()
+        self.frozenTableView.horizontalHeader().setSectionResizeModel(QHeaderView.Fixed)
 
-        self.setLayout(conLayout)
+        self.viewport().stackUnder(self._fozenTableView)
 
-        self.center()
+        self.frozenTableView.setStyleSheet("QTableView { border: none;"
+                                       "background-color: #8EDE21;"
+                                       "selection-background-color: #999}")
+        self.frozenTableView.setSelectionModel(self.selectionModel())
+        col = 1
+        while col < self.model().columnCount():
+            self.frozenTableView.setColumnHidden(col, True)
 
-    def center(self):
-        screen = QDesktopWidget().screenGeometry()
-        size = self.geometry()
-        self.move((screen.width() - size.width()) / 2, (screen.height() - size.height()) / 2)
+        self.frozenTableView.setColumnWidth(0, self.columnWidth(0))
 
-    def setItem(self,text):
-        item = QTableWidgetItem(text)
-        item.setTextAlignment(Qt.AlignCenter)
+        self.frozenTableView.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.frozenTableView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.frozenTableView.show()
 
-        return item
+        self.updateFrozenTableGeometry()
+
+        self.setHorizontalScrollMode(self.ScrollPerPixel)
+        self.setVerticalScrollMode(self.ScrollPerPixel)
+        self.frozenTableView.setVerticalScrollMode(self.ScrollPerPixel)
+
+    def __updateFrozenTableGemetry(self):
+        self._fozenTableView.setGeometry(self.verticalHeader().width() + self.frameWidth(), self.frameWidth(), self.columnWidth(0), self.viewport().height() + self.horizontalHeader().height())
+
+    def resizeEvent(self, QResizeEvent):
+        QTableView.resizeEvent(QResizeEvent)
+        self.__updateFrozenTableGemetry()
+
+    def moveCursor(self, QAbstractItemView_CursorAction, Union, Qt_KeyboardModifiers=None, Qt_KeyboardModifier=None):
+        current = QTableView.moveCursor(QAbstractItemView_CursorAction, Qt_KeyboardModifiers)
+        if QAbstractItemView_CursorAction == self.MoveLeft and current.column() >0 and self.visualRect(current).topLeft().x() < self._fozenTableView.columnWidth(0):
+            newValue = self.horizontalScrollBar().value() + self.visualRect(current).topLeft().x() - self.horizontalScrollBar().columnWidth(0)
+            self.horizontalScrollBar().setValue(newValue)
+
+        return current
+
+    def updateSectionWidth(self, logicalIndex, newSize):
+        if logicalIndex == 0:
+            self._fozenTableView.setColumnWidth(0, newSize)
+            self.__updateFrozenTableGemetry()
+
+    def updateSectionHeight(self, logicalIndex, oldSize, newSize):
+        self._fozenTableView.setRowHeight(logicalIndex, newSize)
 
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    myTable = MyTable()
-    myTable.show()
-    sys.exit(app.exec_())
+
+
