@@ -3,14 +3,33 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.Qt import QRegExp, QRegExpValidator
 
+
 class MyTable(QWidget):
     def __init__(self):
         super(MyTable, self).__init__()
-        self._cost_type = ['产量', '员工工资', '基本工资', '社保', '其他', '合计', '可控支出']
+        self._cost_type = ['产量',
+                          '员工成本', '工资', '奖金', '福利费', '养老金', '医疗保险',
+                          '失业保险', '工伤保险', '生育保险', '住房公积金', '提前退休福利',
+                          '住房补贴', '独生子女补助', '职工教育经费', '工会经费', '其他',
+                          '甲醇', '洗油', '硫酸', '机物料消耗（包括液碱）', '水费', '电费',
+                          '劳保费', '折旧费', '修理费', '油耗', '车修', '低值易耗品摊销',
+                          '保险费', '招待费', '差旅费', '办公费', '其它物料', '润滑油',
+                          '药品', '化验费', '动力煤', '安全生产费', '电话费', '设备检测费',
+                          '大修费', '防暑降温费', '煤气费用', '劳务费用', '生产车辆费用',
+                          '生产车辆油耗', '生产车辆备件', '生产车辆保险', '其它费用',
+                          '催化剂摊销', '蒸汽', '污水处理', '氢气（天然气）', '解析气',
+                          '租赁费', '脱硫费用', '排污费', '环保费', '驰放气', '其他',
+                          '导热油', '熔盐', '以下中煤使用：干熄焦费用', '污水深度处理',
+                          '脱硫脱硝费用', '15MW制造费用', '后脱硫费用', '以下三维使用：循环水',
+                          '纯水', '直流水', '氮气', '仪用空气', '固定资产投资利息', '铺底流资',
+                          '银行利息收入', '手续费', '财产保险', '印花税', '房产税', '土地税',
+                          '证件费', '电仪服务费', '河道维护费', '价格调控基金', '税金及附加', '福利费',
+                          '合计',
+                          '可控费用']
         self.initUI()
 
     def initUI(self):
-        self.resize(1280, 720)
+        self.resize(1280, 700)
         conLayout = QVBoxLayout()
         self.table = QTableWidget()
         self.table.setRowCount(93)
@@ -51,8 +70,9 @@ class MyTable(QWidget):
         #
         # conLayout.addWidget(twheader)
 
-        # self.table.itemChanged.connect(self.table_item_changed)
-        self.table.itemSelectionChanged.connect(self.table_item_changed)
+        self.table.itemChanged.connect(self.table_item_changed)
+
+        # self.table.itemSelectionChanged.connect(self.table_item_changed)
 
 
         conLayout.addWidget(self.table)
@@ -72,8 +92,9 @@ class MyTable(QWidget):
             for j in range(24):
                 # self.table.setItem(i, j, self.setItem('0.00'))
                 edit = QLineEdit('0.00')
-                edit.textChanged.connect(self.text_changed)
-                edit.setValidator(QRegExpValidator(QRegExp('^\d+(\.\d+)?$')))
+                # edit.textChanged.connect(self.text_changed)
+                edit.focusOutEvent(self.text_changed)
+                edit.setValidator(QRegExpValidator(QRegExp('^\d+(\.\d\d)?$')))
                 self.table.setCellWidget(i, j, edit)
 
         self.center()
@@ -108,7 +129,14 @@ class MyTable(QWidget):
         selected_indexes = self.table.selectedIndexes()
         row = selected_indexes[0].row()
         column = selected_indexes[0].column()
-        print(self.table.cellWidget(row, column).text())
+        text = self.table.cellWidget(row, column).text()
+        if text == '':
+            return
+        print(text)
+        num = float(text)
+        print('%.2f' % num)
+        # self.table.cellWidget(row, column).setText(num)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
